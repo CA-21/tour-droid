@@ -1,6 +1,13 @@
 package com.pulkkla.tourdroid.contentproviders;
 
-public class HelsinkiServiceMap extends com.pulkkla.tourdroid.contentproviders.ContentProvider {
+import java.lang.reflect.Type;
+
+import com.google.gson.JsonDeserializer;
+import com.pulkkla.tourdroid.Spot;
+
+
+public class HelsinkiServiceMap extends com.pulkkla.tourdroid.contentproviders.DataProvider {
+	private static final String TAG = "HelsinkiServiceMap";
 	
 	private static String url_base = "http://www.hel.fi/palvelukarttaws/rest/v2/";
 	private static String url_spot = "unit/";
@@ -12,10 +19,19 @@ public class HelsinkiServiceMap extends com.pulkkla.tourdroid.contentproviders.C
 		
 	}
 	
-	public void getSingleSpot(int id, RestCallback callback) {
+	public void getSingleSpot(int id, RestCallback c) {
 		final String url = url_base + url_spot + Integer.toString(id);
-		currentHandler = new RequestHandler(url, callback);
+		currentHandler = new SpotFetch(url, c);
 		currentHandler.execute();
+	}
+
+	@Override
+	protected JsonDeserializer<Spot> getSpotDeserializer() {
+		return new HelsinkiServiceMapSpotDeserializer();
+	}
+	
+	protected Type getSpotType() {
+		return HelsinkiServiceMapSpot.class;
 	}
 
 }

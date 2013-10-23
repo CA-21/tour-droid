@@ -4,5 +4,6 @@
     <string name="app_name">Tourdroid</string>
     <string name="action_settings">Settings</string>
     <string name="hello_world">Hello world from Maven!</string>
+    <string name="button_text">Get some data.</string>
 
 </resources>
