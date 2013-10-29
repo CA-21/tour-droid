@@ -7,7 +7,7 @@ import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapController;
 import org.osmdroid.views.MapView;
 
-import com.pulkkla.tourdroid.contentproviders.DataProvider;
+import com.pulkkla.tourdroid.contentproviders.POIProvider;
 import com.pulkkla.tourdroid.contentproviders.HelsinkiServiceMap;
 import com.pulkkla.tourdroid.contentproviders.RestCallback;
 
@@ -18,6 +18,7 @@ import android.location.LocationManager;
 import android.os.Bundle;
 import android.app.Activity;
 import android.content.Context;
+import android.util.Log;
 import android.view.Menu;
 import android.view.View;
 import android.widget.Toast;
@@ -43,21 +44,26 @@ public class MainActivity extends Activity implements RestCallback, LocationList
     private static final long MIN_TIME_BW_UPDATES = 1000 * 10; // 10 seconds
     
     private boolean initialLocationSet = false;
+    
+    private POIProvider[] providers = new POIProvider[1];;
  
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+    	
+    	// Initialize POI service providers
+    	providers[0] = new HelsinkiServiceMap();
+    	
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         
         // Get current location
-        
         loc = getLocation();
         Toast.makeText(this, "Resolving current location...", Toast.LENGTH_SHORT).show();
         
+        // Initialize map view
         myMap = (MapView)findViewById(R.id.mapview);
         myMap.setBuiltInZoomControls(true);
         myMapCtrl = myMap.getController();
-        
         myMapCtrl.setZoom(14);
         myMapCtrl.setCenter(new GeoPoint(helsinkiLat, helsinkiLon));
     }
@@ -79,16 +85,19 @@ public class MainActivity extends Activity implements RestCallback, LocationList
         return true;
     }
     
-    public void buttonClick(View view) {
-    	
-    	DataProvider hsm = new HelsinkiServiceMap();
-        hsm.getSingleSpot(19835, this);
+    public void topButtonClick(View view) {
+    	switch(view.getId()) {
+    	case R.id.button1:
+    		Toast.makeText(this, "Fetching restaurants", Toast.LENGTH_SHORT).show();
+    		providers[0].searchSpots(3, "restaurant", this);
+    		break;
+    	}
     }
     
     
 	@Override
 	public void preExecute() {
-		Toast.makeText(this, "Retrieving a spot", Toast.LENGTH_SHORT).show();
+		Toast.makeText(this, "Retrieving spots", Toast.LENGTH_SHORT).show();
 	}
 
 
@@ -97,7 +106,8 @@ public class MainActivity extends Activity implements RestCallback, LocationList
 		if (response == null) {
 			Toast.makeText(this, "Error retrieving data", Toast.LENGTH_SHORT).show();
 		} else {
-			Toast.makeText(this, response.get(0).toString(), Toast.LENGTH_LONG).show();
+			Log.i(TAG, "Got " + response.size() + " spots in result (limit 3).");
+			Toast.makeText(this, "Got " + response.size() + " POIs", Toast.LENGTH_LONG).show();
 		}
 	}
 
@@ -119,7 +129,7 @@ public class MainActivity extends Activity implements RestCallback, LocationList
 	public void onLocationChanged(Location location) {
 		if (!initialLocationSet) {
 			Toast.makeText(this, "Got location! " + location.getLatitude() + " " + location.getLongitude(), Toast.LENGTH_LONG).show();
-	        myMapCtrl.setCenter(new GeoPoint(location));
+	        myMapCtrl.animateTo(new GeoPoint(location));
 	        locMgr.removeUpdates(this);
 		}
 	}
