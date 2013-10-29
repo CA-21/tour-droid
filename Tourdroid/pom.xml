@@ -48,6 +48,18 @@
 			<artifactId>gson</artifactId>
 			<version>2.2.4</version>
 		</dependency>
+
+		<dependency>
+			<groupId>org.osmdroid</groupId>
+			<artifactId>osmdroid-android</artifactId>
+			<version>3.0.9</version>
+		</dependency>
+		
+		<dependency>
+		    <groupId>org.slf4j</groupId>
+		    <artifactId>slf4j-android</artifactId>
+		    <version>1.6.1-RC1</version>
+		</dependency>
 	</dependencies>
 
 	<build>
