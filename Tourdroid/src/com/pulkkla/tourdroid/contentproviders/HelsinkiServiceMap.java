@@ -1,6 +1,12 @@
 package com.pulkkla.tourdroid.contentproviders;
 
 import java.lang.reflect.Type;
+import java.text.NumberFormat;
+import java.util.Locale;
+
+import org.osmdroid.util.GeoPoint;
+
+import android.util.Log;
 
 import com.google.gson.JsonDeserializer;
 import com.pulkkla.tourdroid.Spot;
@@ -38,6 +44,21 @@ public class HelsinkiServiceMap extends com.pulkkla.tourdroid.contentproviders.P
 	@Override
 	public void searchSpots(int count, String keyword, RestCallback c) {
 		final String url = url_base + url_spot + "?" + url_list + "&" + url_search + keyword;
+		currentHandler = new SpotFetch(url, c);
+		currentHandler.execute(FETCH_TYPE_MULTI, count);
+	}
+
+	@Override
+	public void searchSpots(int count, String keyword, GeoPoint loc, int range,
+			RestCallback c) {
+		NumberFormat f = NumberFormat.getInstance(new Locale("en", "EN"));
+		f.setMaximumFractionDigits(6);
+		String lat = f.format(loc.getLatitudeE6()/1E6);
+		String lon = f.format(loc.getLongitudeE6()/1E6);
+		
+		final String url = url_base + url_spot + "?" + url_list + "&" + url_search + keyword +
+				"&lat=" + lat + "&lon=" + lon + "&distance=" + range;
+		Log.i(TAG, url);
 		currentHandler = new SpotFetch(url, c);
 		currentHandler.execute(FETCH_TYPE_MULTI, count);
 	}

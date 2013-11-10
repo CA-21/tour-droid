@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
+import org.osmdroid.util.GeoPoint;
 import org.springframework.http.converter.json.GsonHttpMessageConverter;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
@@ -29,6 +30,7 @@ public abstract class POIProvider {
 	
 	public abstract void getSingleSpot(int id, RestCallback c);
 	public abstract void searchSpots(int count, String keyword, RestCallback c);
+	public abstract void searchSpots(int count, String keyword, GeoPoint loc, int range, RestCallback c);
 	
 	protected abstract JsonDeserializer<Spot[]> getSpotDeserializer();
 	protected abstract Type getSpotType();

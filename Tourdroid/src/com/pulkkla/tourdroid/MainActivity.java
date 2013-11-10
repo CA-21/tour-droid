@@ -1,23 +1,29 @@
 package com.pulkkla.tourdroid;
 
+import java.util.ArrayList;
 import java.util.List;
 
-import org.osmdroid.api.IGeoPoint;
+import org.osmdroid.DefaultResourceProxyImpl;
+import org.osmdroid.ResourceProxy;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapController;
 import org.osmdroid.views.MapView;
+import org.osmdroid.views.overlay.*;
 
 import com.pulkkla.tourdroid.contentproviders.POIProvider;
 import com.pulkkla.tourdroid.contentproviders.HelsinkiServiceMap;
 import com.pulkkla.tourdroid.contentproviders.RestCallback;
 
-import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.app.Activity;
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Point;
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
@@ -31,11 +37,16 @@ public class MainActivity extends Activity implements RestCallback, LocationList
 	private MapView myMap;
 	private MapController myMapCtrl;
 	
+	private MyItemizedIconOverlay myMapOL;
+	private ArrayList<OverlayItem> overlayItems;
+	
 	private LocationManager locMgr;
 	private Location loc;
 	
 	private int helsinkiLat = (int)(60.17 * 1E6);
     private int helsinkiLon = (int)(24.94 * 1E6);
+    
+    private GeoPoint currentCenter;
     
 	// The minimum distance to change Updates in meters
     private static final long MIN_DISTANCE_CHANGE_FOR_UPDATES = 10; // 10 meters
@@ -45,7 +56,7 @@ public class MainActivity extends Activity implements RestCallback, LocationList
     
     private boolean initialLocationSet = false;
     
-    private POIProvider[] providers = new POIProvider[1];;
+    private POIProvider[] providers = new POIProvider[1];
  
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,8 +75,14 @@ public class MainActivity extends Activity implements RestCallback, LocationList
         myMap = (MapView)findViewById(R.id.mapview);
         myMap.setBuiltInZoomControls(true);
         myMapCtrl = myMap.getController();
+        currentCenter = new GeoPoint(helsinkiLat, helsinkiLon);
         myMapCtrl.setZoom(14);
-        myMapCtrl.setCenter(new GeoPoint(helsinkiLat, helsinkiLon));
+        myMapCtrl.setCenter(currentCenter);
+        
+        overlayItems = new ArrayList<OverlayItem>();
+    	DefaultResourceProxyImpl defaultResourceProxyImpl = new DefaultResourceProxyImpl(this);
+    	myMapOL = new MyItemizedIconOverlay(overlayItems, null, defaultResourceProxyImpl);
+    	myMap.getOverlays().add(myMapOL);
     }
     
     private Location getLocation() {
@@ -89,7 +106,7 @@ public class MainActivity extends Activity implements RestCallback, LocationList
     	switch(view.getId()) {
     	case R.id.button1:
     		Toast.makeText(this, "Fetching restaurants", Toast.LENGTH_SHORT).show();
-    		providers[0].searchSpots(3, "restaurant", this);
+    		providers[0].searchSpots(3, "restaurant", currentCenter, 1500, this);
     		break;
     	}
     }
@@ -108,6 +125,13 @@ public class MainActivity extends Activity implements RestCallback, LocationList
 		} else {
 			Log.i(TAG, "Got " + response.size() + " spots in result (limit 3).");
 			Toast.makeText(this, "Got " + response.size() + " POIs", Toast.LENGTH_LONG).show();
+			
+			overlayItems.clear();
+			// Draw spots to the map
+			for (Spot s : response) {
+				overlayItems.add(new OverlayItem(s.getName(), s.getName(), s.getLocation().point));
+			}
+			myMap.invalidate();
 		}
 	}
 
@@ -129,7 +153,8 @@ public class MainActivity extends Activity implements RestCallback, LocationList
 	public void onLocationChanged(Location location) {
 		if (!initialLocationSet) {
 			Toast.makeText(this, "Got location! " + location.getLatitude() + " " + location.getLongitude(), Toast.LENGTH_LONG).show();
-	        myMapCtrl.animateTo(new GeoPoint(location));
+			currentCenter = new GeoPoint(location);
+	        myMapCtrl.animateTo(currentCenter);
 	        locMgr.removeUpdates(this);
 		}
 	}
@@ -152,4 +177,31 @@ public class MainActivity extends Activity implements RestCallback, LocationList
 		
 	}
     
+	public class MyItemizedIconOverlay extends ItemizedIconOverlay<OverlayItem> {
+		
+		public MyItemizedIconOverlay(List<OverlayItem> pList,
+				org.osmdroid.views.overlay.ItemizedIconOverlay.OnItemGestureListener<OverlayItem> pOnItemGestureListener,
+				ResourceProxy pResourceProxy) {
+			super(pList, pOnItemGestureListener, pResourceProxy);
+		}
+		
+		@Override
+		public void draw(Canvas canvas, MapView mapview, boolean arg2) {
+			super.draw(canvas, mapview, arg2);
+			
+			if (!overlayItems.isEmpty()) {
+				for (OverlayItem i : overlayItems) {
+					GeoPoint in = i.getPoint();
+					
+					Point out = new Point();
+					mapview.getProjection().toPixels(in, out);
+					
+					Bitmap bm = BitmapFactory.decodeResource(getResources(), R.drawable.restaurant);
+					canvas.drawBitmap(bm, out.x - bm.getWidth()/2, out.y - bm.getHeight()/2, null);
+				}
+			}
+		}
+		
+	}
+	
 }
